@@ -8,15 +8,15 @@ public class JavaRectangle {
         this.height = height;
     }
 
-    public int getHeight() {
+    public final int getHeight() {
         return height;
     }
 
-    public int getWidth() {
+    public final int getWidth() {
         return width;
     }
 
-    public int getArea() {
+    public final int getArea() {
         return width * height;
     }
 }
