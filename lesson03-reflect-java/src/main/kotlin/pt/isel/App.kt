@@ -4,23 +4,17 @@ import java.net.URL
 import java.time.LocalDate
 import java.util.Date
 import kotlin.reflect.KCallable
+import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.memberFunctions
 import kotlin.reflect.full.memberProperties
 
 fun main() {
-//    Date::class
-//        .memberProperties
-//        .filter { it.parameters.size == 1 }
-//        .forEach { println(it.name + "()") }
-    checkYear(LocalDate.now())
-}
+    println("Kotlin properties of Date:")
+    Date::class
+        .declaredMemberProperties
+        .forEach { println("- " + it.name) }
 
-private val fnGetYear = Date::class
-    .members
-    .first { it.name == "getYear" }
-
-fun checkYear(obj: Any) {
-        fnGetYear
-            .call(obj)
-            .also { getYearResult -> println("getYear() => $getYearResult") }
-}
+    println("Java fields of Date:")
+    Date::class.java
+        .declaredFields
+        .forEach { println("- " + it.name) }}
