@@ -12,3 +12,6 @@ plugins {
 
 rootProject.name = "2025-lae-42d-44d"
 include("lesson02-reflect-kotlin")
+include("lesson03-reflect-java")
+include("lesson03-logger")
+
