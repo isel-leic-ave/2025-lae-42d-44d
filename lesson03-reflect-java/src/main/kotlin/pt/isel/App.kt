@@ -1,26 +1,18 @@
 package pt.isel
 
+import java.lang.reflect.Field
 import java.net.URL
 import java.time.LocalDate
 import java.util.Date
-import kotlin.reflect.KCallable
-import kotlin.reflect.full.memberFunctions
-import kotlin.reflect.full.memberProperties
+
 
 fun main() {
-//    Date::class
-//        .memberProperties
-//        .filter { it.parameters.size == 1 }
-//        .forEach { println(it.name + "()") }
-    checkYear(LocalDate.now())
+    Date::class.java
+        .declaredFields // Declared fields including private
+        .forEach { field: Field -> println(field.name + ": " + field.type)}
+
+    Date::class.java
+        .methods  // public methods including inherited
+        .forEach { println(it.name + "()") }
 }
 
-private val fnGetYear = Date::class
-    .members
-    .first { it.name == "getYear" }
-
-fun checkYear(obj: Any) {
-        fnGetYear
-            .call(obj)
-            .also { getYearResult -> println("getYear() => $getYearResult") }
-}

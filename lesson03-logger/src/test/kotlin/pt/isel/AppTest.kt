@@ -4,10 +4,31 @@
 package pt.isel
 
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class AppTest {
-    @Test fun appHasAGreeting() {
-
+    @Test fun `test logger with an Artist instance for David Bowie`() {
+        val expected = """Artist
+   - country = Country
+     - idiom = en
+     - name = UK
+   - kind = Rock
+   - name = David Bowie
+"""
+        val bowie = Artist("Rock", "David Bowie", Country("UK", "en"))
+        StringBuilder()
+            .also { builder ->
+                builder.log(bowie)
+                assertEquals(expected, builder.toString())
+            }
+    }
+    @Test fun `test logger with a Rectangle instance`() {
+        val r = Rectangle(5, 7)
+        System.out.log(r)
+    }
+    @Test fun `test logger with a JavaRectangle instance`() {
+        val r = JavaRectangle(5, 7)
+        System.out.log(r)
     }
 }
