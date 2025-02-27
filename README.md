@@ -5,6 +5,22 @@
 * [Evaluation _em português_](https://github.com/isel-leic-ave/2025-lae-42d-44d/wiki/evaluation)
 * [Bibliography and Tools](https://github.com/isel-leic-ave/2025-lae-42d-44d/wiki/bibliography)
 
+
+<table width="100%">
+    <tr>
+        <td>
+            <a href="https://leanpub.com/kotlinonjvm">
+                <img height="200" src="https://i1.rgstatic.net/publication/382975738_The_Managed_Runtime_Environment_Diving_into_the_JVM_with_Kotlin/links/66b5fdc28f7e1236bc486375/largepreview.png">
+            </a>
+        </td>
+        <td>
+            <a href="https://youtube.com/playlist?list=PLOswEAwp5ehMeYXbv6RiDxVMoZ3ji1hvA&si=6x4tVXw3xOxFln02">
+                <img height="200" src="https://img.youtube.com/vi/JwzGub-ovsg/0.jpg">
+            </a>
+        </td>
+        </tr>
+</table>
+
 ## Important DEADLINES
 
 The first assignment, [jsonoy](https://github.com/isel-leic-ave/jsonoy/), is an
@@ -41,8 +57,3 @@ project are to be completed in **groups of 3 students**.
 | 13     | mai. 19, 2025 | Chapter 8: GC and Cleanup Actions            |               |
 | 14     | mai. 26, 2025 | Group DISCUSSIONS                                   | [jdbcRepo - 3](https://github.com/isel-leic-ave/jdbcRepo)   |
 | 15     | jun. 2, 2025  | Group DISCUSSIONS                                   |               |
-
-
-<a href="https://leanpub.com/kotlinonjvm">
-<img width="150" src="https://i1.rgstatic.net/publication/382975738_The_Managed_Runtime_Environment_Diving_into_the_JVM_with_Kotlin/links/66b5fdc28f7e1236bc486375/largepreview.png">
-</a>
