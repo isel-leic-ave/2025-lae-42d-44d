@@ -1,3 +1,6 @@
 package pt.isel
 
-class Person(val name: String, val country: String)
+class Person(
+    var id: Int = 0,
+    var name: String = "",
+    var country: String = "")
