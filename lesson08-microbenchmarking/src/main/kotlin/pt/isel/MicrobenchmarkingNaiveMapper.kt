@@ -21,9 +21,15 @@ fun main() {
          person = dto.toPerson()
     }
     println(person)
-    println("################## Bench Reflect NaiveMapper")
+    println("################## Bench Reflect mapTo")
     jBench {
          person = dto.mapTo(Person::class)
+    }
+    println(person)
+    println("################## Bench Reflect NaiveMapper.mapFrom (Optimized)")
+    val mapper = NaiveMapper(PersonDto::class, Person::class)
+    jBench {
+        person = mapper.mapFrom(dto)
     }
     println(person)
 }
