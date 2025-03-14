@@ -7,8 +7,7 @@ import kotlin.system.measureTimeMillis
  * BASELINE
  * Produces an output like:
  * Rectangle
- *  - x = 0
- *  - y = 0
+ *  - area = 35
  *  - width = 5
  *  - height = 7
  */
@@ -113,17 +112,4 @@ fun bench05loggerWithRectangle(runs: Int = 10){
         println("Logging rectangle takes $perOp nanos")
     }
     println(mem)
-}
-
-fun jBench(runs: Int = 10, block: () -> Unit){
-    val iterations = 1_000_000
-    repeat(runs) {
-        val nanos = measureNanoTime {
-            repeat(iterations) {
-                block()
-            }
-        }
-        val perOp = nanos / iterations
-        println("Logging rectangle takes $perOp nanos")
-    }
 }

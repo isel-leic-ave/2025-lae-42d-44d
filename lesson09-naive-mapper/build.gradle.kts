@@ -13,11 +13,8 @@ repositories {
 
 dependencies {
     implementation(kotlin("reflect"))
-    implementation(project(":lesson03-logger"))
-    implementation(project(":lesson03-domain-model"))
-    implementation(project(":lesson04-mapTo"))
-    implementation(project(":lesson09-naive-mapper"))
 
+    testImplementation(project(":lesson03-domain-model"))
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
 
