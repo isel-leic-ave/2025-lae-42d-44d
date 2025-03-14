@@ -16,48 +16,74 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
      * with Any corresponding property in srcType
      * or the argument being optional
      */
-    val constructor: KFunction<R> = destType
+    private val constructor: KFunction<R> = destType
         .constructors
-        .first {
+        .firstOrNull {
             it.parameters.all { ctorParam ->
                 srcType.memberProperties.any { srcProp ->
-                    matchProps(srcProp, ctorParam)
+                    val match = matchProps(srcProp, ctorParam)
+                    match
                 }
             }
-        }
+        } ?: throw Exception("No valid constructor found for ${destType.qualifiedName}")
 
-    val props: Map<KProperty<*>, KParameter?> = srcType
-        .memberProperties
-        .associateWith { prop ->
-            constructor
-                .parameters
-                .firstOrNull { matchProps(prop, it) }
+    private val props: Map<KProperty<*>?, KParameter> = constructor
+        .parameters
+        .associateBy { ctorParam ->
+            srcType
+                .memberProperties
+                .firstOrNull { matchProps(it, ctorParam) }
         }
-        .filter { (srcProp, ctorParam) -> ctorParam != null }
+        .filter { (srcProp, _) -> srcProp != null }
+
 
     fun mapFrom(src: T): R = props
         .map { (srcProp, ctorParam) ->
-            require(ctorParam != null)
-            ctorParam to srcProp.call(src)
+            require(srcProp != null)
+            val propValue = srcProp.call(src)
+            if (srcProp.returnType != ctorParam.type) {
+                ctorParam to mapPropValue(propValue, srcProp, ctorParam)
+            } else ctorParam to propValue
         }
         .toMap()
         .let { propValues ->
             constructor.callBy(propValues)
         }
-}
 
-fun matchProps(prop: KProperty<*>, ctorParam: KParameter): Boolean {
-    if (prop.returnType != ctorParam.type) {
-        return false
+    private fun matchProps(prop: KProperty<*>, ctorParam: KParameter): Boolean {
+        if (prop.returnType != ctorParam.type) {
+            if (!areBothNonPrimitive(prop, ctorParam))
+                return false
+        }
+        if (prop.name == ctorParam.name) {
+            return true
+        }
+        val annot = prop
+            .findAnnotations(Match::class)
+            .firstOrNull()
+        if (annot == null) {
+            return false
+        }
+        return annot.name == ctorParam.name
     }
-    if (prop.name == ctorParam.name) {
-        return true
+
+    private fun areBothNonPrimitive(prop: KProperty<*>, ctorParam: KParameter): Boolean {
+        val propClassifier = prop.returnType.classifier
+        val paramClassifier = ctorParam.type.classifier
+        if (propClassifier !is KClass<*> || paramClassifier !is KClass<*>) {
+            return false
+        }
+        return !propClassifier.java.isPrimitive && !paramClassifier.java.isPrimitive
     }
-    val annot = prop
-        .findAnnotations(Match::class)
-        .firstOrNull()
-    if (annot == null) {
-        return false
+
+    private fun mapPropValue(propValue: Any?, prop: KProperty<*>, ctorParam: KParameter): Any? {
+        if (propValue == null) {
+            return null
+        }
+        val propClassifier = prop.returnType.classifier
+        val paramClassifier = ctorParam.type.classifier
+        require(propClassifier is KClass<*>)
+        require(paramClassifier is KClass<*>)
+        return NaiveMapper(propClassifier as KClass<Any>, paramClassifier).mapFrom(propValue)
     }
-    return annot.name == ctorParam.name
 }

@@ -25,7 +25,7 @@ fun <T : Any> Any.mapTo(destType: KClass<T>): T {
     return target
 }
 
-fun matchProps(prop: KProperty<*>, destProp: KProperty<*>): Boolean {
+private fun matchProps(prop: KProperty<*>, destProp: KProperty<*>): Boolean {
     if(prop.returnType != destProp.returnType) {
         return false
     }

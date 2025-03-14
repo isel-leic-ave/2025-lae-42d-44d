@@ -22,7 +22,7 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
             it.parameters.all { ctorParam ->
                 srcType.memberProperties.any { srcProp ->
                     matchProps(srcProp, ctorParam)
-                }
+                } || ctorParam.isOptional
             }
         }
 
@@ -44,20 +44,20 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
         .let { propValues ->
             constructor.callBy(propValues)
         }
-}
 
-fun matchProps(prop: KProperty<*>, ctorParam: KParameter): Boolean {
-    if (prop.returnType != ctorParam.type) {
-        return false
+    private fun matchProps(prop: KProperty<*>, ctorParam: KParameter): Boolean {
+        if (prop.returnType != ctorParam.type) {
+            return false
+        }
+        if (prop.name == ctorParam.name) {
+            return true
+        }
+        val annot = prop
+            .findAnnotations(Match::class)
+            .firstOrNull()
+        if (annot == null) {
+            return false
+        }
+        return annot.name == ctorParam.name
     }
-    if (prop.name == ctorParam.name) {
-        return true
-    }
-    val annot = prop
-        .findAnnotations(Match::class)
-        .firstOrNull()
-    if (annot == null) {
-        return false
-    }
-    return annot.name == ctorParam.name
 }

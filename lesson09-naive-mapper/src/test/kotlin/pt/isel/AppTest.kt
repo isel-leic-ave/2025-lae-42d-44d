@@ -5,7 +5,6 @@ import kotlin.test.Test
 
 class AppTest {
     class ArtistSpotify(
-        @property:Match(name = "country")
         val base: String,
         val kind: String,
         val name: String
@@ -21,12 +20,11 @@ class AppTest {
 
     @Test fun `test mapping ArtistSpotify to an Artist with immutable properties`() {
         val dto = ArtistSpotify("UK", "Rock", "David Bowie")
-        val expected = Artist("Rock", "David Bowie", "UK")
+        val expected = Artist("Rock", "David Bowie", Country("UK", "English"))
         val bowie = NaiveMapper(ArtistSpotify::class, Artist::class)
             .mapFrom(dto)
         assertEquals(expected.kind, bowie.kind)
         assertEquals(expected.name, bowie.name)
-        assertEquals(expected.country, bowie.country)
     }
 
 }

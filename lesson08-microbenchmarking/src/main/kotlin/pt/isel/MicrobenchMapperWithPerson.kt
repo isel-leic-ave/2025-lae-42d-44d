@@ -17,8 +17,14 @@ fun PersonDto.toPerson(): Person {
 
 fun main() {
     val dto = PersonDto("Ze Manel", 31, "Portugal")
-    println("########## Bench Baseline toPerson()")
     lateinit var person: Person
+    println("########## Bench Reflect mapFrom() enhanced")
+    val mapper = NaiveMapper(PersonDto::class, Person::class)
+    jBench {
+        person = mapper.mapFrom(dto)
+    }
+    println(person)
+    println("########## Bench Baseline toPerson()")
     jBench {
         person = dto.toPerson()
     }
@@ -28,11 +34,4 @@ fun main() {
         person = dto.mapTo(Person::class)
     }
     println(person)
-    println("########## Bench Reflect mapFrom() enhanced")
-    val mapper = NaiveMapper(PersonDto::class, Person::class)
-    jBench {
-        person = mapper.mapFrom(dto)
-    }
-    println(person)
-
 }

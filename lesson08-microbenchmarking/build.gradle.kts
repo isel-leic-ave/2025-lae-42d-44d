@@ -16,7 +16,7 @@ dependencies {
     implementation(project(":lesson03-logger"))
     implementation(project(":lesson03-domain-model"))
     implementation(project(":lesson04-mapTo"))
-    implementation(project(":lesson10-naive-mapper-enhanced"))
+    implementation(project(":lesson09-naive-mapper"))
 
     // Use the Kotlin JUnit 5 integration.
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
@@ -36,7 +36,7 @@ java {
 
 application {
     // Define the main class for the application.
-    mainClass = "org.example.AppKt"
+    mainClass = "pt.isel.MicrobenchMapperWithPersonKt"
 }
 
 tasks.named<Test>("test") {
