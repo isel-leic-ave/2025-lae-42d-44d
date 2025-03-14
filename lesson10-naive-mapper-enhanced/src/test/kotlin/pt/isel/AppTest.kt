@@ -1,0 +1,32 @@
+package pt.isel
+
+import org.junit.jupiter.api.Assertions.assertEquals
+import kotlin.test.Test
+
+class AppTest {
+    class ArtistSpotify(
+        @property:Match(name = "country")
+        val base: String,
+        val kind: String,
+        val name: String
+    )
+
+    @Test fun `test mapping PersonDto to Person`() {
+        val dto = PersonDto("Ze Manel", 23, "Portugal")
+        val expected = Person("Ze Manel", "Portugal")
+        val person = NaiveMapper(PersonDto::class, Person::class).mapFrom(dto)
+        assertEquals(expected.name, person.name)
+        assertEquals(expected.country, person.country)
+    }
+
+    @Test fun `test mapping ArtistSpotify to an Artist with immutable properties`() {
+        val dto = ArtistSpotify("UK", "Rock", "David Bowie")
+        val expected = Artist("Rock", "David Bowie", "UK")
+        val bowie = NaiveMapper(ArtistSpotify::class, Artist::class)
+            .mapFrom(dto)
+        assertEquals(expected.kind, bowie.kind)
+        assertEquals(expected.name, bowie.name)
+        assertEquals(expected.country, bowie.country)
+    }
+
+}
