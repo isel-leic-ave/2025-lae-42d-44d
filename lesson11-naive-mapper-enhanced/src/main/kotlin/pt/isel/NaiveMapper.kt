@@ -9,6 +9,12 @@ import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.findAnnotations
 import kotlin.reflect.full.memberProperties
 
+data class PropInfo(
+    val srcProp: KProperty<*>,
+    val ctorProp: KParameter,
+    val mapPropValue: (Any?) -> Any?
+)
+
 class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass<R>) {
 
     /*
@@ -27,23 +33,25 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
             }
         } ?: throw Exception("No valid constructor found for ${destType.qualifiedName}")
 
-    private val props: Map<KProperty<*>?, KParameter> = constructor
-        .parameters
-        .associateBy { ctorParam ->
-            srcType
+    private val props: List<PropInfo> = constructor
+        .parameters.mapNotNull { ctorParam ->
+            val srcProp = srcType
                 .memberProperties
                 .firstOrNull { matchProps(it, ctorParam) }
+            if (srcProp == null) {
+                null
+            } else if (srcProp.returnType != ctorParam.type) {
+                PropInfo(srcProp, ctorParam, buildMapperPropValue(srcProp, ctorParam))
+            } else {
+                PropInfo(srcProp, ctorParam) { it }
+            }
         }
-        .filter { (srcProp, _) -> srcProp != null }
-
 
     fun mapFrom(src: T): R = props
-        .map { (srcProp, ctorParam) ->
+        .map { (srcProp, ctorParam, mapPropValue) ->
             require(srcProp != null)
             val propValue = srcProp.call(src)
-            if (srcProp.returnType != ctorParam.type) {
-                ctorParam to mapPropValue(propValue, srcProp, ctorParam)
-            } else ctorParam to propValue
+            ctorParam to mapPropValue(propValue)
         }
         .toMap()
         .let { propValues ->
@@ -76,14 +84,25 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
         return !propClassifier.java.isPrimitive && !paramClassifier.java.isPrimitive
     }
 
-    private fun mapPropValue(propValue: Any?, prop: KProperty<*>, ctorParam: KParameter): Any? {
-        if (propValue == null) {
-            return null
-        }
+    /**
+     * Instead of transforming the property value,
+     * returns a new function that transforms the property value.
+     */
+    private fun buildMapperPropValue(prop: KProperty<*>, ctorParam: KParameter): (Any?) -> Any? {
         val propClassifier = prop.returnType.classifier
         val paramClassifier = ctorParam.type.classifier
         require(propClassifier is KClass<*>)
         require(paramClassifier is KClass<*>)
-        return NaiveMapper(propClassifier as KClass<Any>, paramClassifier).mapFrom(propValue)
+        // !!!!!! Note we should keep the auxiliary mapper in a companion object
+        // and avoid to instantiate redundant NaiveMapper objects.
+        // e.g. Map<Pair<KClass, KClass>, NaiveMapper>
+        val mapper = NaiveMapper(propClassifier as KClass<Any>, paramClassifier)
+        return { propValue ->
+            if (propValue == null) {
+                null
+            } else {
+                mapper.mapFrom(propValue)
+            }
+        }
     }
 }
