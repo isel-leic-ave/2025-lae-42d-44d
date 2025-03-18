@@ -48,14 +48,12 @@ class NaiveMapper<T : Any, R : Any>(val srcType: KClass<T>, val destType: KClass
         }
 
     fun mapFrom(src: T): R = props
-        .map { (srcProp, ctorParam, mapPropValue) ->
-            require(srcProp != null)
+        .associate { (srcProp, ctorParam, mapPropValue) ->
             val propValue = srcProp.call(src)
             ctorParam to mapPropValue(propValue)
         }
-        .toMap()
-        .let { propValues ->
-            constructor.callBy(propValues)
+        .let { params: Map<KParameter, Any?> ->
+            constructor.callBy(params)
         }
 
     private fun matchProps(prop: KProperty<*>, ctorParam: KParameter): Boolean {
