@@ -36,8 +36,14 @@ class Student()
 
 fun main() {
     val st = Student()
-    val out:PrintStream = System.out
-    
-    // Qtos argumentos recebe o println ??
-    out.println(st) // 2 parametros: this + arg
+    val p = Person("Maria")
+
+    // bytecode?
+    //    getstatic
+    //    astore_2
+    //    aload_2 // push ref out
+    //    aload_1  // push p -> Maria
+    //    invokevirtual       // println():(Ljava/lang/String;)V
+    val output = System.out
+    output.println(p)
 }
