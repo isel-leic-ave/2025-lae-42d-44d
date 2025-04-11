@@ -43,8 +43,8 @@ fun <T : Any, R> findMatchingProperties(
         }
 
 /**
- * Cache of dynamically generated mappers keyed by the domain class.
- * Prevents repeated code generation and loading.
+ * Cache of NaiveMapper instances keyed by the domain class.
+ * Prevents repeated instantiation.
  */
 private val mappers = mutableMapOf<Pair<KClass<*>, KClass<*>>, NaiveMapper<*, *>>()
 

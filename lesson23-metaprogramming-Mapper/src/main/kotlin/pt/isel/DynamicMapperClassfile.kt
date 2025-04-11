@@ -1,12 +1,10 @@
 package pt.isel
 
 import java.io.File
-import java.lang.classfile.ClassBuilder
 import java.lang.classfile.ClassFile
 import java.lang.classfile.ClassFile.ACC_PUBLIC
 import java.lang.classfile.CodeBuilder
 import java.lang.classfile.Interfaces
-import java.lang.classfile.MethodBuilder
 import java.lang.constant.ClassDesc
 import java.lang.constant.ConstantDescs.CD_Object
 import java.lang.constant.ConstantDescs.CD_boolean
@@ -28,6 +26,7 @@ import kotlin.reflect.KProperty
 import kotlin.reflect.KType
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.javaGetter
+import kotlin.reflect.typeOf
 
 private const val packageName = "pt.isel"
 private val packageFolder = packageName.replace(".", "/")
@@ -97,6 +96,134 @@ fun <T : Any, R : Any> buildMapperByteArray(
     src: KClass<T>,
     dest: KClass<R>,
 ) {
+    val mapperDesc = ClassDesc.of("$packageName.$className")
+    val mapperInterfaceDesc = Interfaces.ofSymbols(ClassDesc.of(Mapper::class.qualifiedName)).interfaces()
+
+    val constructor: KFunction<R> = findConstructor(src, dest)
+    val props: Map<KProperty<*>, KParameter> =
+        findMatchingProperties(src, constructor)
+            .associate { (srcProp, destParam, _) -> srcProp to destParam }
+
+    val bytes =
+        ClassFile.of().build(mapperDesc) { clb ->
+            clb
+                .withInterfaces(mapperInterfaceDesc)
+                .withMethod(INIT_NAME, MTD_void, ACC_PUBLIC) { mb ->
+                    mb.withCode { cb ->
+                        cb
+                            .aload(0)
+                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                            .return_()
+                    }
+                }.withMethod(
+                    "mapFrom",
+                    MethodTypeDesc.of(CD_Object, CD_Object),
+                    ACC_PUBLIC,
+                ) { mb ->
+                    mb.withCode { cob -> cob.emitMapFrom(constructor, props, src, dest) }
+                }
+        }
+    File(root, "$packageFolder/$className.class")
+        .also { it.parentFile.mkdirs() }
+        .writeBytes(bytes)
+}
+
+/**
+ * new Person(src.getName(), src.getFrom());
+ *
+ *
+ *     NEW pt/isel/Person
+ *     DUP
+ *     ALOAD 1
+ *     INVOKEVIRTUAL pt/isel/PersonDto.getName ()Ljava/lang/String;
+ *     ALOAD 1
+ *     INVOKEVIRTUAL pt/isel/PersonDto.getFrom ()Ljava/lang/String;
+ *     INVOKESPECIAL pt/isel/Person.<init> (Ljava/lang/String;Ljava/lang/String;)V
+ *     ARETURN
+ */
+fun <T : Any, R : Any> CodeBuilder.emitMapFrom(
+    constructor: KFunction<Any>,
+    props: Map<KProperty<*>, KParameter>,
+    src: KClass<T>,
+    dest: KClass<R>,
+) {
+    aload(1)
+    checkcast(src.descriptor())
+    astore(2)
+    new_(dest.descriptor())
+    dup()
+    props.forEach { srcProp, destParam -> emitLoadProperty(src, srcProp, destParam) }
+    invokespecial(
+        dest.descriptor(),
+        INIT_NAME,
+        MethodTypeDesc.of(
+            CD_void,
+            constructor.parameters.map { it.type.descriptor() },
+        ),
+    )
+    areturn()
+}
+
+/**
+ *  ALOAD 2
+ *  INVOKEVIRTUAL pt/isel/PersonDto.getFrom ()Ljava/lang/String;
+ */
+fun <T : Any> CodeBuilder.emitLoadProperty(
+    src: KClass<T>,
+    srcProp: KProperty<*>,
+    destParam: KParameter,
+) {
+    /**
+     * For non-primitive types we need to load an auxiliary Mapper and
+     * call the mapFrom()
+     */
+    if (!destParam.type
+            .toKClass()
+            .java.isPrimitive &&
+        destParam.type != typeOf<String>()
+    ) {
+        // e.g. loadDynamicMapper(State::class.java, Country::class.java)
+        // LDC Lpt/isel/State;.class
+        // LDC Lpt/isel/Country;.class
+        // INVOKESTATIC pt/isel/DynamicMapperClassfileKt.loadDynamicMapper (Ljava/lang/Class;Ljava/lang/Class;)Lpt/isel/Mapper;
+        ldc(constantPool().classEntry(srcProp.returnType.descriptor()))
+        ldc(constantPool().classEntry(destParam.type.descriptor()))
+        invokestatic(
+            ClassDesc.of("pt.isel.DynamicMapperClassfileKt"),
+            "loadDynamicMapper",
+            MethodTypeDesc.of(
+                Mapper::class.descriptor(),
+                Class::class.descriptor(),
+                Class::class.descriptor(),
+            ),
+        )
+        // Call mapFrom
+    }
+
+    // e.g. this.getFrom()
+    aload(2)
+    invokevirtual(
+        src.descriptor(),
+        srcProp.javaGetter?.name,
+        MethodTypeDesc.of(srcProp.returnType.descriptor()),
+    )
+    /**
+     * For non-primitive types we need to load an auxiliary Mapper and
+     * call the mapFrom()
+     */
+    if (!destParam.type
+            .toKClass()
+            .java.isPrimitive &&
+        destParam.type != typeOf<String>()
+    ) {
+        // <=> (Country) mapper.mapFrom(state)
+        invokeinterface(
+            Mapper::class.descriptor(),
+            "mapFrom",
+            MethodTypeDesc.of(CD_Object, CD_Object),
+        )
+        checkcast(destParam.type.descriptor())
+    }
 }
 
 /**
