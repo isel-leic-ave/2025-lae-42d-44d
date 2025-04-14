@@ -1,12 +1,10 @@
 package pt.isel
 
 import java.io.File
-import java.lang.classfile.ClassBuilder
 import java.lang.classfile.ClassFile
 import java.lang.classfile.ClassFile.ACC_PUBLIC
 import java.lang.classfile.CodeBuilder
 import java.lang.classfile.Interfaces
-import java.lang.classfile.MethodBuilder
 import java.lang.constant.ClassDesc
 import java.lang.constant.ConstantDescs.CD_Object
 import java.lang.constant.ConstantDescs.CD_boolean
@@ -23,11 +21,10 @@ import java.lang.constant.MethodTypeDesc
 import java.net.URLClassLoader
 import kotlin.reflect.KClass
 import kotlin.reflect.KFunction
-import kotlin.reflect.KParameter
-import kotlin.reflect.KProperty
 import kotlin.reflect.KType
 import kotlin.reflect.full.createInstance
 import kotlin.reflect.jvm.javaGetter
+import kotlin.reflect.typeOf
 
 private const val packageName = "pt.isel"
 private val packageFolder = packageName.replace(".", "/")
@@ -85,10 +82,10 @@ private fun <T : Any, R : Any> buildMapperClassfile(
     src: KClass<T>,
     dest: KClass<R>,
 ): KClass<out Any> {
-    val className = "${src.simpleName}2${dest.simpleName}"
+    val className = "$packageName.${src.simpleName}2${dest.simpleName}"
     buildMapperByteArray(className, src, dest)
     return rootLoader
-        .loadClass("$packageName.$className")
+        .loadClass("$className")
         .kotlin
 }
 
@@ -97,6 +94,112 @@ fun <T : Any, R : Any> buildMapperByteArray(
     src: KClass<T>,
     dest: KClass<R>,
 ) {
+    /*
+     * Select the first constructor with All arguments
+     * with Any corresponding property in srcType
+     * or the argument being optional
+     */
+    val constructor: KFunction<R> = findConstructor(src, dest)
+    val props: List<PropInfo> = findMatchingProperties(src, constructor)
+    val bytes: ByteArray =
+        ClassFile
+            .of()
+            .build(ClassDesc.of(className)) { clb ->
+                clb.withInterfaces(Interfaces.ofSymbols(ClassDesc.of(Mapper::class.qualifiedName)).interfaces())
+                clb.withMethod(INIT_NAME, MethodTypeDesc.of(CD_void), ACC_PUBLIC) { mb ->
+                    mb.withCode { cb ->
+                        cb
+                            .aload(0)
+                            .invokespecial(CD_Object, INIT_NAME, MTD_void)
+                            .return_()
+                    }
+                }
+                clb.withMethod("mapFrom", MethodTypeDesc.of(CD_Object, CD_Object), ACC_PUBLIC) { mb ->
+                    mb.withCode { cb -> cb.withMapFrom(className, constructor, props, src, dest) }
+                }
+            }
+    File(root, "${className.replace(".", "/")}.class")
+        .also { it.parentFile.mkdirs() }
+        .writeBytes(bytes)
+}
+
+//    ALOAD 1
+//    CHECKCAST pt/isel/PersonDto
+//    ASTORE 2
+//    NEW pt/isel/Person
+//    DUP
+//    ALOAD 2
+//    INVOKEVIRTUAL pt/isel/PersonDto.getName ()Ljava/lang/String;
+//    ALOAD 2
+//    INVOKEVIRTUAL pt/isel/PersonDto.getFrom ()Ljava/lang/String;
+//    INVOKESPECIAL pt/isel/Person.<init> (Ljava/lang/String;Ljava/lang/String;)V
+//    ARETURN
+fun <T : Any, R : Any> CodeBuilder.withMapFrom(
+    className: String,
+    constructor: KFunction<R>,
+    props: List<PropInfo>,
+    src: KClass<T>,
+    dest: KClass<R>,
+) {
+    // val dto = src as PersonDto
+    aload(1)
+    checkcast(src.descriptor())
+    astore(2)
+
+    // new Person
+    new_(dest.descriptor())
+    dup()
+
+    // For each property of source load its value on the Stack
+    props.forEach { (srcProp, destParam, _) ->
+        if (!srcProp.returnType
+                .toKClass()
+                .java.isPrimitive &&
+            srcProp.returnType != typeOf<String>()
+        ) {
+            // LDC Lpt/isel/State;.class
+            // LDC Lpt/isel/Country;.class
+            // INVOKESTATIC pt/isel/ArtistSpotify2ArtistBaseline.loadMapper (Ljava/lang/Class;Ljava/lang/Class;)Lpt/isel/Mapper;
+            ldc(constantPool().classEntry(srcProp.returnType.descriptor()))
+            ldc(constantPool().classEntry(destParam.type.descriptor()))
+            invokestatic(
+                ClassDesc.of("pt.isel.DynamicMapperClassfileKt"),
+                "loadDynamicMapper",
+                MethodTypeDesc.of(Mapper::class.descriptor(), Class::class.descriptor(), Class::class.descriptor()),
+            )
+        }
+        // e.g.
+        //    ALOAD 2
+        //    INVOKEVIRTUAL pt/isel/PersonDto.getFrom ()Ljava/lang/String;
+        aload(2)
+        invokevirtual(
+            src.descriptor(), // Owner -> The class that owns the property e.g. PersonDto
+            srcProp.javaGetter?.name, // Method Name -> e.g. getFrom
+            MethodTypeDesc.of(srcProp.returnType.descriptor()),
+        )
+        if (!srcProp.returnType
+                .toKClass()
+                .java.isPrimitive &&
+            srcProp.returnType != typeOf<String>()
+        ) {
+            invokeinterface(
+                Mapper::class.descriptor(),
+                "mapFrom",
+                MethodTypeDesc.of(CD_Object, CD_Object),
+            )
+            checkcast(destParam.type.descriptor())
+            // INVOKEINTERFACE pt/isel/Mapper.mapFrom (Ljava/lang/Object;)Ljava/lang/Object; (itf)
+            // CHECKCAST pt/isel/Country
+        }
+    }
+
+    // invokespecial <init>()
+    invokespecial(
+        dest.descriptor(),
+        INIT_NAME,
+        MethodTypeDesc.of(CD_void, constructor.parameters.map { it.type.descriptor() }),
+    )
+    areturn()
 }
 
 /**

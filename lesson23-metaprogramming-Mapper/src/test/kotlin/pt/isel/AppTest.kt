@@ -5,6 +5,10 @@ import kotlin.test.Test
 
 class AppTest {
 
+    @Test fun `try to save and load clasfile for PersonDto2Person`() {
+        loadDynamicMapper(PersonDto::class, Person::class)
+    }
+
     @Test
     fun `test mapping PersonDto to Person`() {
         val dto = PersonDto("Ze Manel", 23, "Portugal")
