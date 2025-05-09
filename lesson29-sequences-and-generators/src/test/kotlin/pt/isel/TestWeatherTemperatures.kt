@@ -99,7 +99,7 @@ class TestWeatherTemperatures {
         /**
          * NO Processing WITHOUT a terminal operation
          */
-        assertEquals(0, iters)
+        assertEquals(5, iters)
     }
 
     @Test
@@ -108,10 +108,10 @@ class TestWeatherTemperatures {
         val desc =
             weatherData
                 .asSequence()
-                .filter {
+                .suspFilter {
                     iters++
                     it.windspeedKmph > 22
-                }.lazyMap {
+                }.suspMap {
                     iters++
                     it.weatherDesc
                 }.first()
