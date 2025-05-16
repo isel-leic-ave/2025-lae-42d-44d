@@ -50,10 +50,17 @@ fun <T, R> Sequence<T>.lazyMap(transform: (T) -> R): Sequence<R> =
             }
     }
 
-/**
- * DOES NOT SUPPORT Sequences with null elements
- */
 fun <T> Sequence<T>.lazyDistinct(): Sequence<T> {
+    TODO()
+}
+
+fun <T> Sequence<T>.lazyConcat(other: Sequence<T>): Sequence<T> {
+    TODO()
+}
+fun <T> Sequence<T>.suspConcat(other: Sequence<T>): Sequence<T> {
+    TODO()
+}
+fun <T : Any?> Sequence<T>.collapse(): Sequence<T> {
     TODO()
 }
 
