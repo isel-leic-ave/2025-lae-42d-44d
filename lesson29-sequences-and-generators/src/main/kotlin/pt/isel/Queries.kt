@@ -60,3 +60,8 @@ fun <T> Sequence<T>.lazyDistinct(): Sequence<T> {
 fun <T> Sequence<T>.suspDistinct(): Sequence<T> {
     TODO()
 }
+
+public fun <T, R, V> Sequence<T>.suspZip(other: Sequence<R>, transform: (a: T, b: R) -> V): Sequence<V> {
+    TODO()
+}
+
