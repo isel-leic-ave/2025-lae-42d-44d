@@ -4,7 +4,9 @@ fun main() {
     checkGc()
     // checkGcWithoutRootReference()
     println("GC after the end of checkGc()")
-    arr = null
+    // Putting null on arr removes the root reference
+    // to the large object array.
+    // arr = null
     System.gc()
     printAllocatedMem()
 }
@@ -40,6 +42,8 @@ fun checkGcWithoutRootReference() {
     System.gc()
     println("After gc:")
     printAllocatedMem()
+    // create 1_000_000 of objects stored in an Array
+    // that has no reference to it.
     makeGarbage()
     println("Mem after create some garbage")
     printAllocatedMem()
